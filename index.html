@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis accesos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#10131a;
+    --paper:#ffffff;
+    --display:"Bricolage Grotesque","Arial Black","Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",Consolas,"Courier New",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--ink);color:var(--paper);font-family:"Segoe UI",Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+  header{padding:20px clamp(16px,4vw,48px);font-size:14px;color:#aab1c0}
+  main{flex:1;display:flex;flex-direction:column}
+
+  .band{
+    flex:1;
+    display:grid;
+    grid-template-columns:minmax(220px,1.1fr) 2fr;
+    align-items:center;
+    gap:20px;
+    padding:clamp(20px,3.5vw,44px) clamp(16px,4vw,48px);
+    background:var(--c);
+  }
+  .band h2{
+    margin:0;
+    font-family:var(--display);
+    font-weight:800;
+    font-size:clamp(34px,6vw,76px);
+    line-height:.95;
+    letter-spacing:-.03em;
+  }
+  .fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .field{
+    display:flex;align-items:stretch;
+    background:var(--paper);color:var(--ink);
+    border-radius:999px;overflow:hidden;
+    min-width:0;
+  }
+  .copy{
+    flex:1;min-width:0;
+    display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+    gap:2px;
+    padding:10px 6px 10px 20px;
+    background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;
+  }
+  .copy small{font-size:12px;color:#5b6272}
+  .copy .v{font-family:var(--mono);font-size:16px;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .copy:disabled{cursor:not-allowed;opacity:.6}
+  .eye{
+    flex:none;width:52px;border:0;background:none;cursor:pointer;color:#5b6272;font-size:13px;
+  }
+  .copy:hover .v{text-decoration:underline;text-decoration-thickness:2px}
+  .copy.done{background:var(--ink);color:var(--paper)}
+  .copy.done small{color:#cfd5e2}
+  :focus-visible{outline:3px solid var(--ink);outline-offset:-3px}
+  .copy.done:focus-visible{outline-color:var(--paper)}
+
+  #toast{
+    position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);
+    background:var(--paper);color:var(--ink);
+    padding:10px 18px;border-radius:999px;font-weight:600;
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:760px){
+    .band{grid-template-columns:1fr}
+    .fields{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #toast{transition:none}
+  }
+</style>
+</head>
+<body>
+<header>Toca un campo para copiarlo.</header>
+<main id="app"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* EDITA AQUÍ tus accesos */
+const accesos = [
+  { nombre:"Netcall",           color:"#d91f1a", user:"71797670", pass:"WKds5Kvi" },
+  { nombre:"Siebel",            color:"#0a7771", user:"NET_PQUISPEC",            pass:"eO6&qnxvorkalc" },
+  { nombre:"Infórmate Persona", color:"#e46a00", user:"NET_PQUISPEC",            pass:"Yulerpelayo199824$" },
+  { nombre:"OneTouch",          color:"#5b3fd1", user:"NET_PQUISPEC",            pass:"zVe;kkcH!AzhG13n" },
+  { nombre:"Zscaler",           color:"#1b6fd6", user:"NET_PQUISPEC@externos.entel.pe", pass:"eO6&qnxvorkalc" }
+];
+
+const app = document.getElementById("app");
+const toast = document.getElementById("toast");
+let t;
+
+function aviso(msg){
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(t);
+  t = setTimeout(()=>toast.classList.remove("show"),1400);
+}
+
+function campo(etiqueta, valor, secreto, nombre){
+  const wrap = document.createElement("div");
+  wrap.className = "field";
+
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "copy";
+  const s = document.createElement("small");
+  s.textContent = etiqueta;
+  const v = document.createElement("span");
+  v.className = "v";
+  const oculto = "••••••••••";
+  v.textContent = !valor ? "Sin datos" : (secreto ? oculto : valor);
+  b.append(s, v);
+  b.setAttribute("aria-label", "Copiar " + etiqueta.toLowerCase() + " de " + nombre);
+  if(!valor) b.disabled = true;
+
+  b.addEventListener("click", ()=>{
+    navigator.clipboard.writeText(valor).then(()=>{
+      aviso(etiqueta + " de " + nombre + " copiado");
+      b.classList.add("done");
+      setTimeout(()=>b.classList.remove("done"),900);
+    });
+  });
+  wrap.append(b);
+
+  if(secreto && valor){
+    const e = document.createElement("button");
+    e.type = "button";
+    e.className = "eye";
+    e.textContent = "Ver";
+    e.setAttribute("aria-label","Mostrar u ocultar contraseña de " + nombre);
+    let visible = false;
+    e.addEventListener("click", ()=>{
+      visible = !visible;
+      v.textContent = visible ? valor : oculto;
+      e.textContent = visible ? "Ocultar" : "Ver";
+    });
+    wrap.append(e);
+  }
+  return wrap;
+}
+
+accesos.forEach(a=>{
+  const sec = document.createElement("section");
+  sec.className = "band";
+  sec.style.setProperty("--c", a.color);
+  const h = document.createElement("h2");
+  h.textContent = a.nombre;
+  const f = document.createElement("div");
+  f.className = "fields";
+  f.append(campo("Usuario", a.user, false, a.nombre), campo("Contraseña", a.pass, true, a.nombre));
+  sec.append(h, f);
+  app.append(sec);
+});
+</script>
+</body>
+</html>
